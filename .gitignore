@@ -1,0 +1,6 @@
+# Stores VSCode versions used for testing VSCode extensions
+.vscode
+
+node_modules
+
+.DS_Store
