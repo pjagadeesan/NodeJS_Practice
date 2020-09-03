@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const session = require('express-session');
+const csrf = require('csurf');
+const flash = require('connect-flash');
 
 const sequelize = require('./util/database');
 
@@ -20,6 +22,16 @@ const OrderItem = require('./models/order-item');
 const app = express();
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
+const csrfProtection = csrf();
+
+//view engine set up
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views')); // by default it will set to views folder already
+
+app.use(bodyParser.urlencoded({ extended: false }));
+//serving static files like css, images
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.use(
   session({
     secret: 'My secret',
@@ -31,11 +43,14 @@ app.use(
   })
 );
 
+app.use(csrfProtection);
+// for flashing messages to views through request object
+app.use(flash());
+
 app.use((req, res, next) => {
   if (!req.session.userId) {
     return next();
   }
-
   User.findByPk(req.session.userId)
     .then(user => {
       req.user = user;
@@ -44,17 +59,15 @@ app.use((req, res, next) => {
     .catch(err => console.log(err));
 });
 
-app.use(bodyParser.urlencoded({ extended: false }));
-//view engine set up
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views')); // by default it will set to views folder already
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
 
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
-
-//serving static files like css, images
-app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(errorController.getError);
 
@@ -72,25 +85,10 @@ Order.belongsTo(User);
 Order.belongsToMany(Product, { through: OrderItem });
 Product.belongsToMany(Order, { through: OrderItem });
 
-let currentUser;
-
 sequelize
   //.sync({ force: true })
   .sync()
   .then(result => {
-    //console.log(result);
-    return User.findOrCreate({ where: { name: 'priya', email: 'priya@test.com' } });
-  })
-  .then(([user, created]) => {
-    currentUser = user;
-    console.log('User created! ' + user.getDataValue('name'));
-    return user.getCart();
-  })
-  .then(cart => {
-    //console.log(user);
-    if (!cart) {
-      currentUser.createCart();
-    }
     app.listen(3000);
   })
   .catch(err => {

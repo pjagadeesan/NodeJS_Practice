@@ -4,6 +4,10 @@ const express = require('express');
 const router = express.Router();
 
 const adminController = require('../controllers/admin');
+const isAuth = require('../middleware/is-auth');
+//Adding middleware to all admin routes to check whether user is authenticated for the page
+router.use(isAuth);
+
 // admin/add-product => GET
 router.get('/add-product', adminController.getAddProduct);
 // admin/products => GET
