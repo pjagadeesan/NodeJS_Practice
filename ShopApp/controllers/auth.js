@@ -9,7 +9,7 @@ const User = require('../models/user');
 const transporter = nodemailer.createTransport(
   sendGridTransport({
     auth: {
-      api_key: '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',
+      api_key: '',
     },
   })
 );
@@ -22,6 +22,8 @@ exports.getLogin = (req, res, next) => {
     pageTitle: 'Login',
     isAuthenticated: false,
     errorMessage: message,
+    oldInputs: { email: '', password: '' },
+    validationErrors: [],
   });
 };
 
@@ -29,11 +31,13 @@ exports.postLogin = (req, res, next) => {
   const { email, password } = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.render('auth/login', {
+    return res.status(422).render('auth/login', {
       path: '/login',
       pageTitle: 'Login',
       isAuthenticated: false,
       errorMessage: errors.array()[0].msg,
+      oldInputs: { email, password },
+      validationErrors: errors.array(),
     });
   }
 
@@ -43,8 +47,14 @@ exports.postLogin = (req, res, next) => {
         .compare(password, user.password)
         .then(doMatch => {
           if (!doMatch) {
-            req.flash('error', 'Invalid password');
-            return res.redirect('/login');
+            return res.status(422).render('auth/login', {
+              path: '/login',
+              pageTitle: 'Login',
+              isAuthenticated: false,
+              errorMessage: 'Invalid password',
+              oldInputs: { email, password },
+              validationErrors: [],
+            });
           }
           req.session.isLoggedIn = true;
           req.session.userId = user.id;
@@ -73,18 +83,23 @@ exports.getSignup = (req, res, next) => {
     pageTitle: 'Signup',
     isAuthenticated: false,
     errorMessage: message,
+    oldInputs: { email: '', password: '', confirmPassword: '' },
+    validationErrors: [],
   });
 };
 
 exports.postSignup = (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password, confirmPassword } = req.body;
   const errors = validationResult(req);
+  console.log(errors.array());
   if (!errors.isEmpty()) {
-    return res.render('auth/signup', {
+    return res.status(422).render('auth/signup', {
       path: '/signup',
       pageTitle: 'Signup',
       isAuthenticated: false,
       errorMessage: errors.array()[0].msg,
+      oldInputs: { email, password, confirmPassword },
+      validationErrors: errors.array(),
     });
   }
 

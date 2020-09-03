@@ -9,14 +9,15 @@ const router = express.Router();
 router.get('/login', authController.getLogin);
 router.post(
   '/login',
-  check('email').custom(value => {
-    return User.findOne({ where: { email: value } }).then(user => {
-      if (!user) {
-        return Promise.reject('Email does not exist');
-      }
-      return true;
-    });
-  }),
+  check('email')
+    .trim()
+    .custom(value => {
+      return User.findOne({ where: { email: value } }).then(user => {
+        if (!user) {
+          return Promise.reject('Email does not exist');
+        }
+      });
+    }),
   authController.postLogin
 );
 router.post('/logout', authController.postLogout);
@@ -26,28 +27,33 @@ router.post(
   '/signup',
   [
     check('email')
+      .trim()
       .isEmail()
       .withMessage('Please enter a valid email')
       // to demonstrate custom validation
       .custom(value => {
         return User.findOne({ where: { email: value } }).then(user => {
-          if (!user) {
+          if (user) {
             return Promise.reject('Email already exist');
           }
         });
-      }),
+      })
+      .normalizeEmail(),
     body(
       'password',
       'Please enter a password with only text and numbers and atleast 5 characters long'
     )
       .isLength({ min: 5 })
-      .isAlphanumeric(),
-    body('confirmPassword').custom((value, { req }) => {
-      if (value !== req.body.password) {
-        throw new Error('Passwords have to match');
-      }
-      return true;
-    }),
+      .isAlphanumeric()
+      .trim(),
+    body('confirmPassword')
+      .trim()
+      .custom((value, { req }) => {
+        if (value !== req.body.password) {
+          throw new Error('Passwords have to match');
+        }
+        return true;
+      }),
   ],
   authController.postSignup
 );
