@@ -9,6 +9,7 @@ const User = require('../models/user');
 const transporter = nodemailer.createTransport(
   sendGridTransport({
     auth: {
+      // mail no-longer works - removed api key for safety
       api_key: '',
     },
   })
@@ -63,9 +64,17 @@ exports.postLogin = (req, res, next) => {
             return res.redirect('/');
           });
         })
-        .catch(err => console.log(err));
+        .catch(err => {
+          const error = new Error(err);
+          error.httpStatusCode = 500;
+          return next(error);
+        });
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.postLogout = (req, res, next) => {
@@ -91,7 +100,6 @@ exports.getSignup = (req, res, next) => {
 exports.postSignup = (req, res, next) => {
   const { email, password, confirmPassword } = req.body;
   const errors = validationResult(req);
-  console.log(errors.array());
   if (!errors.isEmpty()) {
     return res.status(422).render('auth/signup', {
       path: '/signup',
@@ -119,7 +127,11 @@ exports.postSignup = (req, res, next) => {
         html: '<h1>You signed up successfully!</h1>',
       });
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.getResetPassword = (req, res, next) => {
@@ -159,7 +171,11 @@ exports.postResetPassword = (req, res, next) => {
         `,
         });
       })
-      .catch(err => console.log(err));
+      .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+      });
   });
 };
 
@@ -177,7 +193,11 @@ exports.getNewPassword = (req, res, next) => {
         token,
       });
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.postNewPassword = (req, res, next) => {
@@ -200,5 +220,9 @@ exports.postNewPassword = (req, res, next) => {
     .then(result => {
       return res.redirect('/login');
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
