@@ -1,17 +1,33 @@
 const Product = require('../models/product');
 const Order = require('../models/order');
 
+const ITEMS_PER_PAGE = 2;
+
 exports.getProducts = (req, res, next) => {
+  const page = +req.query.page || 1;
+  const offset = (page - 1) * ITEMS_PER_PAGE;
+  let totalItems;
   // passing callback function to fetchAll to get the products once the readFile is done.
-  Product.findAll()
+  Product.count()
+    .then(numProducts => {
+      totalItems = numProducts;
+      return Product.findAll({ limit: ITEMS_PER_PAGE, offset });
+    })
     .then(products => {
       res.render('shop/product-list', {
-        pageTitle: 'All Products',
+        pageTitle: 'Products',
         prods: products,
         path: '/products',
+        currentPage: page,
+        hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE),
       });
     })
     .catch(err => {
+      console.log(err);
       const error = new Error(err);
       error.httpStatusCode = 500;
       return next(error);
@@ -36,16 +52,30 @@ exports.getProduct = (req, res, next) => {
 };
 
 exports.getIndex = (req, res, next) => {
+  const page = +req.query.page || 1;
+  const offset = (page - 1) * ITEMS_PER_PAGE;
+  let totalItems;
   // passing callback function to fetchAll to get the products once the readFile is done.
-  Product.findAll()
+  Product.count()
+    .then(numProducts => {
+      totalItems = numProducts;
+      return Product.findAll({ limit: ITEMS_PER_PAGE, offset });
+    })
     .then(products => {
       res.render('shop/index', {
         pageTitle: 'Shop',
         prods: products,
         path: '/',
+        currentPage: page,
+        hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE),
       });
     })
     .catch(err => {
+      console.log(err);
       const error = new Error(err);
       error.httpStatusCode = 500;
       return next(error);
